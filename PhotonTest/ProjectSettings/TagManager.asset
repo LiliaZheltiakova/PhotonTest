@@ -8,6 +8,7 @@ TagManager:
   - Player2
   - HUD_Player1
   - HUD_Player2
+  - CameraBorders
   layers:
   - Default
   - TransparentFX

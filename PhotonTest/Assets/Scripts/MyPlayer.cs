@@ -7,6 +7,8 @@ using Photon.Realtime;
 public class MyPlayer : MonoBehaviour, IPunObservable
 {
     public PhotonView photonView;
+    private int myPVID;
+    private int enemyPVID;
 
     public float moveSpeed = 4f;
     private Vector3 smoothMove;
@@ -24,7 +26,10 @@ public class MyPlayer : MonoBehaviour, IPunObservable
     [SerializeField] private bool onGround;
     [SerializeField] private float checkRadius;
     [SerializeField] private LayerMask whatIsGround;
+    [SerializeField] private Transform attackPoint;
+    [SerializeField] private float attackRange = .5f;
 
+    private int health = 3;
     void Start()
     {
         if(photonView.IsMine == false)
@@ -47,6 +52,8 @@ public class MyPlayer : MonoBehaviour, IPunObservable
         {
             SmoothMovement();
         }
+
+
     }
 
     private void ProcessInputs()
@@ -82,14 +89,18 @@ public class MyPlayer : MonoBehaviour, IPunObservable
             _anim.SetBool("isJump", true);
             _isJumping = true;
             _jumpTimeCounter = jumpTime;
-            _rigidbody.velocity = Vector2.up * jumpForce;
+            velocity.x = Input.GetAxis("Horizontal") * moveSpeed;
+            velocity.y =  (Vector2.up * jumpForce).y;
+            _rigidbody.velocity = new Vector2(velocity.x, velocity.y);
         }
 
         if(Input.GetKey(KeyCode.Space) && _isJumping == true)
         {
             if(_jumpTimeCounter > 0f)
             {
-                _rigidbody.velocity = Vector2.up * jumpForce;
+                velocity.x = Input.GetAxis("Horizontal") * moveSpeed;
+                velocity.y =  (Vector2.up * jumpForce).y;
+                _rigidbody.velocity = new Vector2(velocity.x, velocity.y);
                 _jumpTimeCounter -= Time.deltaTime;
             }
             else
@@ -110,10 +121,12 @@ public class MyPlayer : MonoBehaviour, IPunObservable
         if(stream.IsWriting)
         {
             stream.SendNext(transform.position);
+            stream.SendNext(health);
         }
         else if(stream.IsReading)
         {
             smoothMove = (Vector3)stream.ReceiveNext();
+            health = (int)stream.ReceiveNext();
         }
     }
 
@@ -125,5 +138,50 @@ public class MyPlayer : MonoBehaviour, IPunObservable
     public void UpdateCrystall()
     {
         playerHUD.UpdateCrystall();
+    }
+
+    public void Attack()
+    {
+        DoHit(attackPoint.position, attackRange);
+    }
+
+    private void DoHit(Vector3 hitPosition, float hitRadius)
+    {
+        Collider2D[] hits = Physics2D.OverlapCircleAll(hitPosition, hitRadius);
+
+        for(int i = 0; i < hits.Length; i++)
+        {
+            if(!GameObject.Equals(hits[i].gameObject, this.gameObject))
+            {
+                MyPlayer player = hits[i].gameObject.GetComponent<MyPlayer>();
+                if(player != null)
+                {
+                    player.photonView.RPC("RecieveHit", RpcTarget.Others);
+                    break;
+                }
+            }
+        }  
+    }
+
+    [PunRPC]
+    public void RecieveHit()
+    {
+        health--;
+
+        Debug.Log(this.gameObject.name + " get hit " + photonView.IsMine);
+
+        _anim.SetTrigger("GetHit");
+        
+        playerHUD.UpdateLives(health);
+
+        if(health == 0)
+        {
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        _anim.SetTrigger("Die");
     }
 }
