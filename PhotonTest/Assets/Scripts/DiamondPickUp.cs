@@ -19,11 +19,10 @@ public class DiamondPickUp : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D collider)
     {
         Debug.Log("Touch Crystall");
-        // King king = collider.gameObject.GetComponent<King>();
-        // if(king != null)
-        // {
-            HUD.Instance.UpdateCrystall();
+        if(collider.gameObject.tag == "Player1" || collider.gameObject.tag == "Player2")
+        {
+            collider.gameObject.GetComponent<MyPlayer>().UpdateCrystall();
             Destroy(this.gameObject);
         }
-   // }
+    }
 }

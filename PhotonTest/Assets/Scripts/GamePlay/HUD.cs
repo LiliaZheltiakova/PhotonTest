@@ -5,12 +5,6 @@ using UnityEngine.UI;
 
 public class HUD : MonoBehaviour
 {
-    static private HUD m_instance;
-    static public HUD Instance 
-    {
-        get { return m_instance; }
-    }
-
     [SerializeField] private GameObject heart;
     [SerializeField] private Image numberLabel;
     [SerializeField] private Sprite[] numberUnits = new Sprite[10];
@@ -23,7 +17,6 @@ public class HUD : MonoBehaviour
 
     void Awake()
     {
-        m_instance = this;
     }
     void Start()
     {
